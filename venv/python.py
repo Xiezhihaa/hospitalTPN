@@ -1,147 +1,236 @@
-#引入數據庫
-from pyecharts.charts import Kline
-from pyecharts.charts import Line
-from pyecharts.charts import Bar
-from pyecharts.charts import Grid
-from pyecharts import options as opts
-import pandas_datareader as pdr
-import pandas_datareader.data as web
-import mpl_finance as mpf
 import numpy as np          #匯入陣列套件
 import pandas as pd         #匯入
-import seaborn as sns       #匯入視覺化模組
-import datetime as datetime
-import talib                #匯入金融模塊
-import twstock
-open('python.py',encoding='windows-1252')
+import math
 
-#設定參數
-yourchoose=input("請選擇你欲查詢股票："
-                 "1：臺灣國內股票"
-                 "2：國外股票")
-stock_code0=input("請輸入你要查詢的股票代號")
-stock_code1=stock_code0+'.TW'
-stock_code2=eval(stock_code0)
+#[patient ID,N,volume of PN, glucose,a.a.,fat,Zn,[t],3-way]
 
-start=datetime.datetime(2019,1,1)
-endtime=datetime.datetime(2019,9,1)
-df_stock_code2=pdr.data.DataReader(stock_code1,'yahoo',start=start,end=endtime) #從yahoo取得歷年股價
-df_stock_code2.index=df_stock_code2.index.format(formatter=lambda x:x.strftime("%Y-%m-%d")) #lambda函數，datetime 轉成字
+yourchoose=input("請選擇你要的作業內容：\n1：計算明日應準備器具數量\n2：調配微量物質")
 
-#轉換成陣列
-numberofday=len(df_stock_code2.index)-1
-stock_price=[]
-for i in range(numberofday):
-    stock_price.append([])
-    stock_price[i].append(df_stock_code2['Open'][i])
-    stock_price[i].append(df_stock_code2['Close'][i])
-    stock_price[i].append(df_stock_code2['Low'][i])
-    stock_price[i].append(df_stock_code2['High'][i])
+if yourchoose=="1":
+    number=input("請輸入明日要準備人數")
+    number=eval(number)
+    PNinformation=[]
 
-stock_date=[]
-for i in range(numberofday):
-    stock_date.insert(i, df_stock_code2.index[i])
+    #輸入資訊
+    for i in range(number):
+        PNinformation.append([])
+        patientID=input("請輸入病人 ID")
+        PNinformation[i].append(patientID)
+        Nn=eval(input("是否有大 N，無請按0，有請按1"))
+        PNinformation[i].append(Nn)
+        PNvolume=eval(input("請輸入 PN 體積"))
+        PNinformation[i].append(PNvolume)
+        glucosepercent=eval(input("請輸入葡萄糖濃度"))
+        PNinformation[i].append(glucosepercent)
+        aminoacidpercent = eval(input("請輸入氨基酸濃度"))
+        PNinformation[i].append(aminoacidpercent)
+        fatvolume = eval(input("請輸入 fat 毫升數"))
+        PNinformation[i].append(fatvolume)
+        Zn = eval(input("請輸入所需鋅毫升數"))
+        PNinformation[i].append(Zn)
+        Znt = eval(input("請輸入所需 [t] 毫升數"))
+        PNinformation[i].append(Znt)
+        threeway = eval(input("請輸入所需 3-way 數量"))
+        PNinformation[i].append(threeway)
+        finish="你完成第 %d 筆資料"%(i+1)
+        print(finish)
 
-#獲取移動平均線資訊
-sma_10 = talib.SMA(np.array(df_stock_code2['Close']), 10)
-sma_120 = talib.SMA(np.array(df_stock_code2['Close']), 120)
-sma_240 = talib.SMA(np.array(df_stock_code2['Close']), 240)
+    #修正錯誤資訊
+    confirm=input("確認輸入資料無誤，若有錯誤請按1，如無錯誤請按2")
+    while confirm=="1":
+        wrongID=input("請輸入欲修改的病人ID")
+        wrongdata=input("請輸入欲修改項目：\n1.病人ID\n2.N\n3.PN 體積"
+                        "\n4.葡萄糖含量\n5.氨基酸含量\n6.脂質毫升數"
+                        "\n7.鋅毫升數\n8.[t]毫升數\n9.3-way數量")
+        wrongdata=eval(wrongdata)-1
+        rightdata=input("請輸入正確資訊")
+        if wrongdata !="1":
+            rightdata=eval(rightdata)
+        for i in range(number):
+            if PNinformation[i][0]==wrongID:
+                PNinformation[i][wrongdata]=rightdata
+                for i in range(number):
+                    displayarray = PNinformation[i]
+                    print(displayarray)
+        confirm1=input("確認輸入資料無誤，若有錯誤請按1，如無錯誤請按2")
+        if confirm1 == "2":
+            for i in range(number):
+                displayarray= PNinformation[i]
+                print(displayarray)
+            break
+    while confirm=="2":
+        for i in range(number):
+            displayarray=PNinformation[i]
+            print(displayarray)
+        break
 
-#獲取交易日資訊
-stock_volume=[]
-for i in range(numberofday):
-    stock_volume.append(df_stock_code2['Volume'][i])
 
-#繪畫K線圖
-kline=(
-    Kline()
-    .add_xaxis(stock_date)
-    .add_yaxis("Kline",stock_price)
-    .set_global_opts(
-        xaxis_opts=opts.AxisOpts(is_scale=True),
-        yaxis_opts=opts.AxisOpts(
-            is_scale=True,
-            #顯示分割
-            splitarea_opts=opts.SplitAreaOpts(
-                is_show=True, areastyle_opts=opts.AreaStyleOpts(opacity=1)
-            ),
-        ),
+    glucose=0.0
+    glucose50=50/100
+    totalglucose=0.0
+    #計算葡萄糖總量
+    for i in range(number):
+        glucose=PNinformation[i][2]*(PNinformation[i][3]/100)
+        totalglucose=totalglucose+glucose
+    totalglucosemL=math.ceil(totalglucose/glucose50/500)
+    youneedglucose="你總共需要準備%d瓶葡萄糖溶液"%(totalglucosemL)
+    print(youneedglucose)
 
-        #圖例位置
-        legend_opts=opts.LegendOpts(is_show=True,pos_top=10,pos_left="center"),
-        #DataZoom slider
-        datazoom_opts=[opts.DataZoomOpts(is_show=False, type_="inside",
-                                         xaxis_index=[0, 1], range_start=0, range_end=100, ),
-                       opts.DataZoomOpts(is_show=True, xaxis_index=[0, 1], type_="slider",
-                                         pos_top="90%", range_start=0, range_end=100, )],
+if yourchoose=="2":
+    #設定離子參數
+    K2PO4_K=4.4
+    K2PO4_PO4=3
+    NaOAc_Na=4
+    NaOAc_OAc=4
+    KCl_K=2
+    KCl_Cl=2
+    NaCl_Na=0.51
+    NaCl_Cl=0.51
+    Aminoplasmal_Na=0.050
+    Aminoplasmal_K=0.025
+    Aminoplasmal_Mg=0.005
+    Aminoplasmal_OAc=0.046
+    Aminoplasmal_Cl=0.052
+    Aminoplasmal_PO4=0.010
+    Moriamin_OAc=0.06
+    Aminosteril_OAc=0.078
+    MgSO4_Mg=0.811
+    Cagluconate_Ca=0.465
+    Pedicare=0.058
 
-        tooltip_opts=opts.TooltipOpts(
-            trigger="axis", axis_pointer_type="cross",background_color="rgba(245,245,245,0.8)",
-            border_width=1, border_color="#ccc", textstyle_opts=opts.TextStyleOpts(color="#000")
-        ),
+    #設定原料藥濃度
+    Aminoplasmal=10/100
+    NaCl=3/100
+    MgSO4=10/100
+    KCl=15/100
+    #Cagluconate=10/100
+    glucose50_1=50/100
 
-        #axispointer_opts.AxisPointerOpts(is_show=True,link=[{"xAxisIndex":"all"}],
-        # label=opts.LabelOpts(background_color=''#777'),),
+    #輸入資訊
+    number1 = input("請輸入明日要準備人數")
+    number1 = eval(number1)
+    PNinformation1 = []
 
-        #區域選擇組件
-        #brush_opts=opts.BrushOpts(#指定所有數列對應的座標系x_axis_index="all",#指定哪些 series
-        # 可以被聯動brush_link="all",#定義顏色透明度out_of_brush={"colorAlpha":0.1},brush_type="lineX",),
+    for i in range(number1):
+        PNinformation1.append([])
+        patientID1=input("請輸入病人 ID")
+        PNinformation1[i].append(patientID1)
+        PNvolume1 = eval(input("請輸入 PN 總體積"))
+        PNinformation1[i].append(PNvolume1)
+        glucosepercent1 = eval(input("請輸入葡萄糖含量"))
+        PNinformation1[i].append(glucosepercent1)
+        aminoacidpercent1 = eval(input("請輸入氨基酸含量"))
+        PNinformation1[i].append(aminoacidpercent1)
+        Na = eval(input("請輸入鈉總含量"))
+        PNinformation1[i].append(Na)
+        K = eval(input("請輸入鉀總含量"))
+        PNinformation1[i].append(K)
+        Cl = eval(input("請輸入氯總含量"))
+        PNinformation1[i].append(Cl)
+        Mg = eval(input("請輸入鎂總含量"))
+        PNinformation1[i].append(Mg)
+        Ca = eval(input("請輸入鈣總含量"))
+        PNinformation1[i].append(Ca)
+        P = eval(input("請輸入磷總含量"))
+        PNinformation1[i].append(P)
+        finish2="你完成第 %d 筆資料"%(i+1)
+        print(finish2)
 
-    )
-)
+    # 修正錯誤資訊
+    confirm2 = input("確認輸入資料無誤，若有錯誤請按1，如無錯誤請按2")
+    while confirm2 == "1":
+        wrongID1 = input("請輸入欲修改的病人ID")
+        wrongdata1 = input("請輸入欲修改項目："
+                            "\n1.病人ID"    #0
+                            "\n2.PN 總體積" #1
+                            "\n3.葡萄糖含量" #2
+                            "\n4.氨基酸含量" #3
+                            "\n5.鈉總量"    #4
+                            "\n6.鉀總量"    #5
+                            "\n7.氯總量"    #6
+                            "\n8.鎂總量"    #7
+                            "\n9.鈣總量"    #8
+                            "\n10.磷總量")  #9
+        wrongdata1 = eval(wrongdata1) - 1
+        rightdata1 = input("請輸入正確資訊")
+        if wrongdata1 != "1":
+            rightdata1 = eval(rightdata1)
+        for i in range(number1):
+            if PNinformation1[i][0] == wrongID1:
+                    PNinformation1[i][wrongdata1] = rightdata1
+                    for i in range(number1):
+                        displayarray1=PNinformation1[i]
+                        print(displayarray1)
+                    print(PNinformation1)
+        confirm3 = input("確認輸入資料無誤，若有錯誤請按1，如無錯誤請按2")
+        if confirm3 == "2":
+            for i in range(number1):
+                displayarray1 = PNinformation1[i]
+                print(displayarray1)
+            break
+    while confirm2 == "2":
+        for i in range(number1):
+            displayarray1 = PNinformation1[i]
+            print(displayarray1)
+        break
 
-#繪畫移動平均線
-line=(
-    Line()
-    .add_xaxis(stock_date)
-    .add_yaxis("10日移動平均線",sma_10,is_smooth=True,
-               label_opts=opts.LabelOpts(is_show=False),
-               linestyle_opts=opts.LineStyleOpts(width=3,opacity=0.5))
-    .add_yaxis("120日移動平均線",sma_120,is_smooth=True,
-               label_opts=opts.LabelOpts(is_show=False),
-               linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5))
-    .add_yaxis("240日移動平均線",sma_240,is_smooth=True,
-               label_opts=opts.LabelOpts(is_show=False),
-               linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5))
-    .set_global_opts(
-            xaxis_opts=opts.AxisOpts(type_="category"),
-        )
-)
+    materialmL=[]
+    for i in range(number1):
+        glucose1= (PNinformation1[i][1]*PNinformation1[i][2]/100)/glucose50_1
+        aminoacid1=(PNinformation1[i][1]*PNinformation1[i][3]/100)/Aminoplasmal
+        Ca_mL = PNinformation1[i][8]/Cagluconate_Ca
+        Mg_mL = (PNinformation1[i][7]-aminoacid1*Aminoplasmal_Mg)/MgSO4_Mg
+        K2PO4_mL = (PNinformation1[i][9]-aminoacid1*Aminoplasmal_PO4)/K2PO4_PO4
+        KCl_mL = (PNinformation1[i][5]-aminoacid1*Aminoplasmal_K-K2PO4_mL*K2PO4_K)/KCl_K
+        NaCl_mL= (PNinformation1[i][6]-aminoacid1*Aminoplasmal_Cl-KCl_mL*KCl_Cl)/NaCl_Cl
+        NaOAc_mL=(PNinformation1[i][4]-aminoacid1*Aminoplasmal_Na-NaCl_mL*NaCl_Na)/NaOAc_Na
 
-bar=(
-    Bar()
-    .add_xaxis(stock_date)
-    .add_yaxis("交易量",stock_volume,
-               xaxis_index=1,yaxis_index=1,label_opts=opts.LabelOpts(is_show=False),
-               itemstyle_opts=opts.ItemStyleOpts(color="#3B4856",color0="#A73835"),
-               )
-    .set_global_opts(
-        xaxis_opts=opts.AxisOpts(type_="category",is_scale=True,grid_index=1,boundary_gap=False,
-                                 axisline_opts=opts.AxisLineOpts(is_on_zero=False),
-                                 axistick_opts=opts.AxisTickOpts(is_show=False),
-                                 splitline_opts=opts.SplitLineOpts(is_show=False),
-                                 axislabel_opts=opts.LabelOpts(is_show=False),
-                                 split_number=20,),
-        yaxis_opts=opts.AxisOpts(grid_index=1,is_scale=True,split_number=2,
-                                 axislabel_opts=opts.LabelOpts(is_show=False),
-                                 axisline_opts=opts.AxisLineOpts(is_show=False),
-                                 axistick_opts=opts.AxisTickOpts(is_show=False),
-                                 ),
+        if NaCl_mL<0:
+            A1=NaCl_Na
+            B1=NaOAc_Na
+            C1=PNinformation1[i][4]-aminoacid1*Aminoplasmal_Na
+            A2=NaCl_Cl
+            B2=-NaOAc_OAc
+            C2=aminoacid1*Aminoplasmal_OAc-aminoacid1*Aminoplasmal_Cl-KCl_mL*KCl_Cl
 
-        legend_opts=opts.LegendOpts(is_show=False),
+            Eq1=np.array([[A1,B1],[A2,B2]])
+            Eq2=np.array([C1,C2]).reshape(2,1)
+            Eq1_inv=np.linalg.inv(Eq1)
+            ANS=Eq1=Eq1_inv.dot(Eq2)
+            NaCl_mL=float(ANS[0])
+            NaOAc_mL=float(ANS[1])
 
-    )
-)
+        glucose1=round(glucose1,2)
+        aminoacid1=round(aminoacid1,2)
+        Ca_mL=round(Ca_mL,2)
+        Mg_mL=round(Mg_mL,2)
+        K2PO4_mL=round(K2PO4_mL,2)
+        KCl_mL=round(KCl_mL,2)
+        NaCl_mL=round(NaCl_mL,2)
+        NaOAc_mL=round(NaOAc_mL,2)
 
-overlap_kline_line=kline.overlap(line)
+        patient="病人ID %s"%(PNinformation1[i][0])
+        glucose1mL="你需要 %f mL 葡萄糖溶液"%(glucose1)
+        aminoacid1mL="你需要 %f mL Aminoplasmal-Neo E"%(aminoacid1)
+        CamL = "你需要 %f mL Ca gluconate\n"%(Ca_mL)
+        MgmL = "你需要 %f mL MgSO4 溶液"%(Mg_mL)
+        K2PO4mL="你需要 %f mL K2PO4 溶液"%(K2PO4_mL)
+        KClmL = "你需要 %f mL KCl 溶液"%(KCl_mL)
+        NaClmL = "你需要 %f mL NaCl 溶液"%(NaCl_mL)
+        NaOAcmL = "你需要 %f mL NaOAc 溶液"%(NaOAc_mL)
 
-grid_chart=(
-    Grid()
-    .add(overlap_kline_line,
-         grid_opts=opts.GridOpts(pos_left="10%",pos_right="8%",height="50%"),
-         )
-    .add(bar,
-         grid_opts=opts.GridOpts(pos_left="10%",pos_right="8%",pos_top="70%",height="16%"),)
-)
 
-grid_chart.render()
+
+        print(patient)
+
+        if glucose1 <0 or aminoacid1<0 or Ca_mL <0 or Mg_mL <0 or K2PO4_mL<0 or KCl_mL<0 or NaCl_mL<0 or NaOAc_mL<0:
+            print("本程式已使用線性代數幫你找到最佳解\n如依然是負數，煩請人工調整")
+
+        print(glucose1mL)
+        print(aminoacid1mL)
+        print(NaClmL)
+        print(K2PO4mL)
+        print(MgmL)
+        print(KClmL)
+        print(NaOAcmL)
+        print(CamL)
